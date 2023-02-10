@@ -18,4 +18,5 @@ There might be some artists that are not featured in the playlists, especially i
 **Identify several tracks in your corpus that are either extremely typical or atypical. Why do you think that they are so typical or so strange? Several pages of your final portfolio will be dedicated to detailed analyses of specific tracks, so it is important to think about which ones might be most interesting.**
 
 Typical: popular bands
+
 Atypical: artists with longer tracks or niche genres
