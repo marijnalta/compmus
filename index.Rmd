@@ -21,7 +21,7 @@ library(knitr)
 
 ```{r Load Playlist, echo=FALSE}
 Sys.setenv(SPOTIFY_CLIENT_ID = '5b0d512e353341d1986dd873ae8a7941')
-Sys.setenv(SPOTIFY_CLIENT_SECRET = 'd2770f6fecf3482cb772c91522859d24')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = '')
 ll_playlist <- get_playlist_audio_features("", "5KjYEGVaP7kDz8kR5z4u1d")
 ```
     
