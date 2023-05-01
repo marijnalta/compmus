@@ -1,0 +1,589 @@
+---
+title: "Change after the pandemic: an analysis of the Lowlands festival line-up"
+author: "Marijn Alta"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+```{css}
+  .navbar {
+  background-color: #bc0232;
+}
+
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > li > a:focus {
+    background-color: #970627;
+}
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+  background-color: #970627;
+}
+.navbar-inverse .navbar-toggle:hover,
+.navbar-inverse .navbar-toggle:focus {
+  background-color: #970627;
+}
+.navbar-inverse .navbar-collapse,
+.navbar-inverse .navbar-form {
+  border-color: #970627;
+}
+  
+
+
+```{r Load packages, message=FALSE, echo=FALSE}
+library(tidyverse)
+library(spotifyr)
+library(remotes)
+library(usethis)
+library(plotly)
+library(DT)
+library(forcats)
+library(purrr)
+library(knitr)
+library(tidymodels)
+library(ggdendro)
+library(heatmaply)
+library(tidytext)
+library(compmus)
+```
+
+```{r Load Playlist, echo=FALSE}
+Sys.setenv(SPOTIFY_CLIENT_ID = '5b0d512e353341d1986dd873ae8a7941')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = '4306fa250e454c2592ee74cdef497c4e')
+ll19 <- get_playlist_audio_features("", "1JvkJkoh69oAadYYL72Vy3")
+ll22 <- get_playlist_audio_features("", "5KjYEGVaP7kDz8kR5z4u1d")
+ll_playlist <- get_playlist_audio_features("", "5KjYEGVaP7kDz8kR5z4u1d")
+```
+
+Introduction {data-icon="ion-document-text"}
+===================================== 
+
+
+How did the pandemic affect the line-up of the Lowlands festival? In this portfolio, the line-up of the 2019 and 2022 edition will be compared. As a regular attendee I wondered what would have changed. I will look at how the music changed. Did it become sadder? Happier? Faster? Louder?!
+
+
+Two main assumptions I am most interested in: 
+<br>1. Music in the 2022 playlist will be faster than in the 2019 playlist, as this has been a social media trend that best can been seen on TikTok and Instagram reels.
+<br>2. The sentiment has changed towards happier music, as people felt a need for positivity after lack of social contact in the pandemic years between the editions. The valence feature will be used to evaluate this.
+<br><br>I will also look into danceability, energy and loudness. I expect these three features to be very similar in both playlists, as I did not feel a change in this as an attendee.
+<br><br>There are some limitations to keep in mind. Both of the playlists contain 100 songs that the organizer feels are representative of the line-up of the festival, the songs played at the festival obviously could have been different. The playlists are a proxy for this and the conclusions drawn have limited validity.
+
+
+Row
+-------------------------------------
+    
+### 
+    
+```{r, out.extra=c('allow="encrypted-media"', 'allowtransparency="true"', 'frameBorder="0"')}
+knitr::include_url("https://open.spotify.com/embed/playlist/1JvkJkoh69oAadYYL72Vy3?utm_source=generator", height = "380")
+```
+
+    
+### 
+
+```{r, out.extra=c('allow="encrypted-media"', 'allowtransparency="true"', 'frameBorder="0"')}
+knitr::include_url("https://open.spotify.com/embed/playlist/5KjYEGVaP7kDz8kR5z4u1d?utm_source=generator", height = "380")
+```
+
+
+Visualizations {.storyboard data-icon="ion-stats-bars"}
+===================================== 
+
+### How did the sentiment change?
+```{r}
+green <- "#4ed163"
+purple <- "#c86a98"
+
+tracks19 <- 
+  ll19 %>% mutate(playlist = "Lowlands 2019")
+
+tracks22 <- 
+  ll22 %>% mutate(playlist = "Lowlands 2022")
+
+viz1 <- ggplot(tracks19, aes(x=valence, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(green))+
+  labs(x="Valence", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()
+
+viz2 <- ggplot(tracks22, aes(x=valence, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(purple))+
+  labs(x="Valence", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()+
+  ggtitle("Distribution of valence 2019 (left) 2022 (right)")
+
+subplot(viz1, viz2)
+```
+
+***
+
+A need for happier or sadder songs after the pandemic? The mean of both charts appears similar, and although the second half of the 2022 chart looks a bit bigger, it does not seem like a significant difference. To my surprise, my assumption was not true.
+
+
+### Did it get faster?
+```{r}
+viz1 <- ggplot(tracks19, aes(x=tempo, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(green))+
+  labs(x="Tempo", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()
+
+viz2 <- ggplot(tracks22, aes(x=tempo, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(purple))+
+  labs(x="Tempo", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()+
+  ggtitle("Distribution of tempo 2019 (left) 2022 (right)")
+
+subplot(viz1, viz2)
+
+``` 
+
+***
+No big difference between the charts. Contrary to what I expected, it did not get faster in 2022. I am curious what the average tempo in 2023 will be, as I feel faster music is still a trend on social media. 
+
+
+### Did it get more danceable?
+```{r}
+viz1 <- ggplot(tracks19, aes(x=danceability, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(green))+
+  labs(x="Danceability", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()
+
+viz2 <- ggplot(tracks22, aes(x=danceability, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(purple))+
+  labs(x="Danceability", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()+
+  ggtitle("Distribution of danceability 2019 (left) 2022 (right)")
+
+subplot(viz1, viz2)
+```
+
+***
+Similar charts, 2022 was as danceable as 2019. Average danceability for different festivals would be interesting to look into for further research. Do all festivals have similar danceability?
+
+### Did it get more energy?
+```{r}
+viz1 <- ggplot(tracks19, aes(x=energy, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(green))+
+  labs(x="Energy", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()
+
+viz2 <- ggplot(tracks22, aes(x=energy, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(purple))+
+  labs(x="Energy", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()+
+  ggtitle("Distribution of energy 2019 (left) 2022 (right)")
+
+subplot(viz1, viz2)
+```
+
+
+
+***
+Also similar energy. Same question as for the previous charts, how would this look like when comparing different festivals? Is there an optimal festival energy? Is more not always better?
+
+### Did it get louder!?
+```{r}
+viz1 <- ggplot(tracks19, aes(x=loudness, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(green))+
+  labs(x="Loudness", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()
+
+viz2 <- ggplot(tracks22, aes(x=loudness, fill=playlist,
+                    text = paste(playlist_name)))+
+  geom_density(alpha=0.7, color=NA)+
+  scale_fill_manual(values=c(purple))+
+  labs(x="Loudness", y="Density") +
+  guides(fill=guide_legend(title="Playlist"))+
+  theme_minimal()+
+  ggtitle("Distribution of loudness 2019 (left) 2022 (right)")
+
+subplot(viz1, viz2)
+
+``` 
+***
+Also very similar, it did not get significantly louder. Probably better for everyone present.
+
+### Chromagram
+```{r}
+track <-
+  get_tidy_audio_analysis("2vfSCFvMbpf4hwxt22Wx7b") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+track %>%
+  mutate(pitches = map(pitches, compmus_normalise, "chebyshev")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title = "Chromagram In Silence") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+```
+
+***
+
+From the track In Silence by Amelie Lens, techno. I chose this track as I was curious to what this high energy techno track would produce. The chart is more yellow than I expected, although it should not surprise much as it is a very overwhelming track.
+
+### Self similarity
+```{r}
+bzt <-
+  get_tidy_audio_analysis("2vfSCFvMbpf4hwxt22Wx7b") %>% 
+  compmus_align(bars, segments) %>%                     
+  select(bars) %>%                                      
+  unnest(bars) %>%                                      
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "rms", norm = "euclidean"              
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "rms", norm = "euclidean"              
+      )
+  )
+bind_rows(
+  bzt %>%
+    compmus_self_similarity(pitches, "manhattan") %>%
+    mutate(d = d / max(d), type = "Chroma"),
+  bzt %>%
+    compmus_self_similarity(timbre, "euclidean") %>%
+    mutate(d = d / max(d), type = "Timbre")
+) %>%
+  mutate() %>%
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  facet_wrap(~type) +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+```
+
+***
+
+Again the track In Silence by Amelie Lens. I chose this track as I was curious to the patterns that a techno track would produce. Indeed, repetitive.
+
+
+### Chordogram
+```{r}
+circshift <- function(v, n) {
+  if (n == 0) v else c(tail(v, n), head(v, -n))
+}
+#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+major_key <-
+  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
+minor_key <-
+  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+twenty_five <-
+  get_tidy_audio_analysis("5Z8Dj3LtbyCMiwE86rhg2f") %>%
+  compmus_align(sections, segments) %>%
+  select(sections) %>%
+  unnest(sections) %>%
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"
+      )
+  )
+twenty_five %>% 
+  compmus_match_pitch_template(
+    key_templates,         # Change to chord_templates if descired
+    method = "euclidean",  # Try different distance metrics
+    norm = "manhattan"     # Try different norms
+  ) %>%
+  ggplot(
+    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+  ) +
+  geom_tile() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "")
+```
+
+***
+
+From the song Marea (we've lost dancing) by Fred again.. and the Blessed Madonna. I chose this song, because it has a lot of energy and I expected to see a lot of tones, I did.
+<br><br><br>
+
+### Clusters
+```{r dendograms}
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit |> 
+    collect_predictions() |> 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit |> 
+    conf_mat_resampled() |> 
+    group_by(Prediction) |> mutate(precision = Freq / sum(Freq)) |> 
+    group_by(Truth) |> mutate(recall = Freq / sum(Freq)) |> 
+    ungroup() |> filter(Prediction == Truth) |> 
+    select(class = Prediction, precision, recall)
+}  
+
+halloween <-
+  get_playlist_audio_features("bnfcollection", "1JvkJkoh69oAadYYL72Vy3") |>
+  add_audio_analysis() |>
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) |>
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) |>
+  mutate_at(vars(pitches, timbre), map, bind_rows) |>
+  unnest(cols = c(pitches, timbre))
+
+halloween_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = halloween
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(halloween |> mutate(track.name = str_trunc(track.name, 20))) |>
+  juice() |>
+  column_to_rownames("track.name")
+
+  halloween_dist <- dist(halloween_juice, method = "euclidean")
+  
+  halloween_dist |> 
+  hclust(method = "single") |> # Try single, average, and complete.
+  dendro_data() |>
+  ggdendrogram()
+
+  halloween <-
+  get_playlist_audio_features("bnfcollection", "5KjYEGVaP7kDz8kR5z4u1d") |>
+  add_audio_analysis() |>
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) |>
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) |>
+  mutate_at(vars(pitches, timbre), map, bind_rows) |>
+  unnest(cols = c(pitches, timbre))
+
+halloween_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = halloween
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(halloween |> mutate(track.name = str_trunc(track.name, 20))) |>
+  juice() |>
+  column_to_rownames("track.name")
+
+  halloween_dist <- dist(halloween_juice, method = "euclidean")
+  
+  halloween_dist |> 
+  hclust(method = "single") |> # Try single, average, and complete.
+  dendro_data() |>
+  ggdendrogram()
+```
+
+***
+
+The clusters in the 2019 playlist (top). There is just one big cluster, that gets smaller every step. This could mean the playlist is very diverse. The same patterns is visible in the 2022 playlist (bottom).
+
+### Tempogram
+```{r}
+graveola <- get_tidy_audio_analysis("70IUWsl6v4II26gg2iBeOi")
+graveola |>
+  tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+***
+
+Tempograms are my favourite, as someone who finds keeping the beat a challenge. I chose this tempogram, because it is from the song "Ik wil dansen" by Froukje, but the tempogram shows that the beat varies a bit. 
+
+
+ 
+Conclusion {data-icon="ion-document-text"}
+===================================== 
+    
+Let’s recap the two main assumptions explained in the introduction.
+
+1. Music in the 2022 playlist will be faster than in the 2019 playlist.
+<br>Not true. The fast music trend present on social media (TikTok, Instagram reels), was not visible in the 2022 playlist. I am looking forward to the full 2023 lineup to see if it will be faster. It could also be that the fast music trend is only present in specific genres, techno for example. Looking at the possible increase in hard techno and other subgenres could be an angle to examine this theory.
+<br><br>2. The sentiment has changed towards happier music.
+<br>Also not true. Perhaps I confused my newfound enthusiasm at the 2022 edition with a change in energy since the previous edition. Perhaps there is a similar average positive sentiment at every music festival?
+
+<br><br>Danceability, energy and loudness were similar, as expected. It would be interesting to compare the researched features of the playlists to the features of playlists of other popular festivals. Do they have similar feature averages as Lowlands? Is there an optimal festival tempo, sentiment, danceability, energy or loudness?
+
